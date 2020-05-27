@@ -1,0 +1,9 @@
+{
+    "domainName": "wezeo.dev",
+    "sslEmail": "ocmsta@wezeo.com",
+    "subDomains": [
+        "demo",
+        "dev",
+        "ionic"
+    ]
+}

@@ -1,0 +1,144 @@
+#!/usr/bin/env sh
+
+# Step
+# 1. Setup
+# - install dependencies
+# - add webapps directory
+# - add webapps group
+# 2. Add new domain
+# - create new domain user
+# - create domain directory
+# - add postgres script in project directory
+# - setup gunicorn, supervisor, nginx
+# - setup let's encrypt https
+# - add domain to conf file
+# 3. Add new subdomain
+# - create new subdomain user
+# - create subdomain directory
+# - add postgres script in project directory
+# - setup gunicorn, supervisor, nginx
+# - setup let's encrypt https
+# - add subdomain to conf file
+
+
+#################################################
+# Install needed package to deploy django
+# For debian-9 instance at aws-lightsail
+# suwiryo.atmo@gmail.com - 26/May/2020
+
+# Make commands invokes serially
+sudo set -euo pipefail
+
+sudo apt-get update -y
+sudo apt-get upgrade -y
+
+# Dependencies for serving django
+sudo apt-get install -y supervisor
+sudo apt-get install -y nginx
+sudo apt-get install -y python-virtualenv
+# Dependencies for using postgres database
+sudo apt-get install -y postgresql postgresql-contrib
+sudo apt-get install -y libpq-dev python-dev
+
+# Dependency to manage let's encrypt certificate
+sudo apt-get install -y python-certbot-nginx
+
+# Dependencies for managing this scripts
+sudo apt-get install -y jq
+
+# create webapps directory
+sudo mkdir /webapps
+
+# create webapps group
+sudo groupadd --system webapps
+
+
+#################################################
+# Add new user
+# Setup for new user
+USER=$1
+sudo useradd --system --gid webapps --shell /bin/bash --home /webapps/$USER_django $USER
+
+# Create user directory
+sudo mkdir -p /webapps/$USER_django/
+sudo chown $USER /webapps/$USER_django/
+
+# Create django project
+sudo su - $USER -c 'cd ~ && 
+virtualenv . && 
+source bin/activate && 
+pip install django gunicorn setproctitle && 
+django-admin.py startproject $0 && 
+deactivate' -- $USER
+
+# gunicorn_start template, executable
+NAME="CHANGE_HERE_app"                                  # Name of the application
+DJANGODIR=/webapps/CHANGE_HERE_django/$0                # Django project directory
+SOCKFILE=/webapps/CHANGE_HERE_django/run/gunicorn.sock  # we will communicte using this unix socket
+USER=CHANGE_HERE                                        # the user to run as
+GROUP=webapps                                  # the group to run as
+NUM_WORKERS=3                                  # how many worker processes should Gunicorn spawn
+DJANGO_SETTINGS_MODULE=CHANGE_HERE.settings             # which settings file should Django use
+DJANGO_WSGI_MODULE=CHANGE_HERE.wsgi
+
+# Copy gunicorn start script
+sudo su - $USER -c 'sed "s/CHANGE_HERE/$1/g" "$0/gunicorn_start" > "/webapps/$1_django/bin/gunicorn_start"' -- $PWD/template $USER
+
+# Supervisor conf template
+[program:CHANGE_HERE]
+command = /webapps/CHANGE_HERE_django/bin/gunicorn_start                    ; Command to start app
+user = CHANGE_HERE                                                          ; User to run as
+stdout_logfile = /webapps/$CHANGE_HERE_django/logs/gunicorn_supervisor.log   ; Where to write log messages
+redirect_stderr = true  
+
+# Copy supervisor conf script
+sudo su -c 'sed "s/CHANGE_HERE/$1/g" "$0/supervisor_conf" > "/etc/supervisor/conf.d/$1.conf"' -- $PWD/template $USER
+
+# Reread & update supervisor to start apps
+sudo supervisorctl reread
+sudo supervisorctl update
+
+# nginx entry
+upstream CHANGE_HERE_app_server {
+  server unix:/webapps/CHANGE_HERE_django/run/gunicorn.sock fail_timeout=0;
+}
+
+server {
+    listen   80;
+    server_name CHANGE_HERE.test;
+
+    client_max_body_size 4G;
+
+    access_log /webapps/CHANGE_HERE_django/logs/nginx-access.log;
+    error_log /webapps/CHANGE_HERE_django/logs/nginx-error.log;
+
+    location /static/ {
+        alias   /webapps/CHANGE_HERE_django/static/;
+    }
+
+    location /media/ {
+        alias   /webapps/CHANGE_HERE_django/media/;
+    }
+
+    location / {
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header Host $http_host;
+        proxy_redirect off;
+        if (!-f $request_filename) {
+            proxy_pass http://CHANGE_HERE_app_server;
+            break;
+        }
+    }
+}
+
+# Copy nginx entry
+sudo su -c 'sed "s/CHANGE_HERE/$1/g" "$0/nginx_entry" > "/etc/nginx/sites-available/$1"' -- $PWD/template $USER
+
+# Enable nginx entry
+sudo ln -s /etc/nginx/sites-available/$USER /etc/nginx/sites-enabled/$USER
+
+# Add let's encrypt https
+sudo certbot --nginx -m $EMAIL --agree-tos -n -d $DOMAIN -d www.$DOMAIN 
+
+# Restart nginx
+sudo service nginx restart

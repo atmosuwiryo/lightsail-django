@@ -1,0 +1,38 @@
+upstream CHANGE_HERE_app_server {
+  server unix:/webapps/CHANGE_HERE_django/run/gunicorn.sock fail_timeout=0;
+}
+
+server {
+    listen   80;
+    server_name CHANGE_HERE;
+
+    client_max_body_size 4G;
+
+    access_log /webapps/CHANGE_HERE_django/logs/nginx-access.log;
+    error_log /webapps/CHANGE_HERE_django/logs/nginx-error.log;
+
+    location /static/ {
+        alias   /webapps/CHANGE_HERE_django/static/;
+    }
+
+    location /media/ {
+        alias   /webapps/CHANGE_HERE_django/media/;
+    }
+
+    location / {
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header Host $http_host;
+        proxy_redirect off;
+        if (!-f $request_filename) {
+            proxy_pass http://CHANGE_HERE_app_server;
+            break;
+        }
+    }
+
+    # Error pages
+    error_page 500 502 503 504 /500.html;
+    location = /500.html {
+        root /webapps/hello_django/static/;
+    }
+}
+
