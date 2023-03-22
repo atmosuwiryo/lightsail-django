@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 
-NAME="CHANGE_HERE_app"
-DJANGODIR=/webapps/CHANGE_HERE_django/CHANGE_HERE
-SOCKFILE=/webapps/CHANGE_HERE_django/run/gunicorn.sock
+NAME="CHANGE_HERE__app"
+DJANGODIR=/webapps/CHANGE_HERE__django/CHANGE_HERE
+SOCKFILE=/webapps/CHANGE_HERE__django/run/gunicorn.sock
 USER=CHANGE_HERE
 GROUP=webapps
 NUM_WORKERS=3

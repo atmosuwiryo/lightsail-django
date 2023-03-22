@@ -6,26 +6,12 @@
 # suwiryo.atmo@gmail.com - 27/May/2020
 #################################################
 
-
-#################################################
-# Functions Start Here
-add_to_crontab() {
-    echo '> Add Certbot Renew to Crontab'
-    TMP_FILE=$(mktemp)
-    sudo crontab -l | tee $TMP_FILE > /dev/null
-    echo "0 12 * * * /usr/bin/certbot renew --quiet" | tee -a $TMP_FILE > /dev/null
-    sudo crontab $TMP_FILE
-    rm $TMP_FILE
-}
-# Functions End Here
-
-
-# Get lightsail-django current directory.
-LIGHTSAIL_DJANGO=$( cd "$(dirname "${BASH_SOURCE[0]}")" ; pwd -P )
+# Get django-domain current directory.
+DOMAIN_DIR=$( cd "$(dirname "${BASH_SOURCE[0]}")" ; pwd -P )
 
 clear
 echo "#################################################"
-echo "# Add New Domain"
+echo "# Add New Subdomain"
 
 # Color Variable
 Gre='\033[0;32m';  # Green
@@ -36,40 +22,32 @@ set -euo pipefail
 
 #################################################
 # Get domain and email data
-if [ -z ${2+x} ]; then
+if [ -z ${1+x} ]; then
     echo -e -n "${Gre}"
-    read -p "Your domain name: " DOMAIN
-    read -p "Email for generating ssl: " EMAIL
+    read -p "Your subdomain name: " SUBDOMAIN
     echo -e -n "${NoC}"
 else
-    DOMAIN=$1
-    EMAIL=$2
+    SUBDOMAIN=$1
 fi
+
+CONF="$DOMAIN_DIR/domain.conf.json"
+TMP_CONF=$(mktemp)
+# Get domain from ServerName in bitnami.conf
+EMAIL=$(jq -r '.sslEmail' $CONF)
+DOMAIN=$(jq -r '.domainName' $CONF)
+DOMAIN=${SUBDOMAIN}.${DOMAIN}
+
 SANITIZED_DOMAIN=${DOMAIN//./_} 
 
 #################################################
-# Creating domain conf file
-CONF="$LIGHTSAIL_DJANGO/$DOMAIN/domain.conf.json"
-EXAMPLE_CONF="$LIGHTSAIL_DJANGO/template/domain.conf.json"
-TMP_CONF=$(mktemp)
+# Save subdomain to conf file
 
-mkdir -p $DOMAIN
-if [ ! -e $CONF ]; then
-    echo "Conf file not exist, creating $CONF"
-    jq '.subDomains=[]' $EXAMPLE_CONF > $CONF 
-fi
+# Add subdomain to list
+# - Remove first, so that there is no duplicate if already exist
+jq --arg subDomain $SUBDOMAIN '.subDomains |= .-[$subDomain]' $CONF > $TMP_CONF && mv $TMP_CONF $CONF
 
-# Updating conf domain name
-jq --arg domainName $DOMAIN --arg email $EMAIL \
-    '.domainName = $domainName | .sslEmail = $email' $CONF \
-    > $TMP_CONF && mv $TMP_CONF $CONF
-
-echo -e -n "${Gre}"
-echo "Configuration saved to $CONF"
-echo -e -n "${NoC}"
-
-# Add new subdomain scripts link file to domain directory
-ln -s $LIGHTSAIL_DJANGO/scripts/new-subdomain.sh $LIGHTSAIL_DJANGO/$DOMAIN/new-subdomain.sh
+# - Add to array subdomain after that
+jq --arg subDomain $SUBDOMAIN '.subDomains |= .+[$subDomain]' $CONF > $TMP_CONF && mv $TMP_CONF $CONF
 
 #################################################
 # Add new user
@@ -133,9 +111,7 @@ sudo ln -s /etc/nginx/sites-available/$DOMAIN /etc/nginx/sites-enabled/$DOMAIN
 
 # Add let's encrypt https
 echo '> Creating Lets Encrypt certificate'
-sudo certbot --nginx -m $EMAIL --preferred-challenges http-01 --agree-tos --redirect -d $DOMAIN -d www.$DOMAIN 
-# Add to cronjob if not exists
-sudo crontab -l | grep -q "certbot renew" || add_to_crontab
+sudo certbot --nginx -m $EMAIL --agree-tos --redirect -d $DOMAIN -d www.$DOMAIN 
 
 # Restart nginx
 echo '> Restarting nginx'

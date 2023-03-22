@@ -10,8 +10,8 @@ echo ""
 echo "#################################################"
 echo "# Install Dependencies"
 
-# Make commands invokes serially
-sudo set -euo pipefail
+# Make commands invokes serially, exit on error
+set -euo pipefail
 
 sudo apt-get update -y
 sudo apt-get upgrade -y
@@ -22,10 +22,13 @@ sudo apt-get install -y nginx
 sudo apt-get install -y python-virtualenv
 # Dependencies for using postgres database
 sudo apt-get install -y postgresql postgresql-contrib
-sudo apt-get install -y libpq-dev python-dev
+sudo apt-get install -y libpq-dev python-dev python3-dev gcc
 
 # Dependency to manage let's encrypt certificate
 sudo apt-get install -y python-certbot-nginx
 
 # Dependencies for managing this scripts
 sudo apt-get install -y jq
+
+# Needed for project maintenance
+sudo apt-get install git

@@ -6,18 +6,24 @@
 # suwiryo.atmo@gmail.com - 27/May/2020
 #################################################
 
+# Get lightsail-django current directory.
+LIGHTSAIL_DJANGO=$( cd "$(dirname "${BASH_SOURCE[0]}")" ; pwd -P )
+
 clear
 echo "#################################################"
 echo "# Setup Server"
 
-# Make commands invokes serially
-sudo set -euo pipefail
+# Make commands invokes serially, exit on error
+set -euo pipefail
 
 # Install dependencies
-./scripts/install-dependencies.sh
+$LIGHTSAIL_DJANGO/scripts/install-dependencies.sh
 
 # create webapps directory
-sudo mkdir /webapps
+sudo mkdir -p /webapps
 
 # create webapps group
 sudo groupadd --system webapps
+
+# Create swap
+$LIGHTSAIL_DJANGO/scripts/create-swap.sh
