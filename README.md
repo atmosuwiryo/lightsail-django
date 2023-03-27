@@ -14,5 +14,5 @@ Created on 2020 and need some update with the latest OS/app/dependencies to be u
 
 * run `setup.sh` for the first time
 * run `create-domain.sh` to create domains
-* run `script/new-subdomain.sh` to create sub-domains
+* run `your-domain/new-subdomain.sh` to create sub-domains
 
