@@ -33,3 +33,6 @@ sudo apt-get install -y jq
 
 # Needed for project maintenance
 sudo apt-get install git
+
+# Needed for renew certificate automatically
+sudo apt-get install cron
