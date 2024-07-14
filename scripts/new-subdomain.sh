@@ -66,7 +66,7 @@ sudo su - $SANITIZED_DOMAIN -c 'cd ~ &&
     virtualenv -p python3 . && 
     source bin/activate && 
     pip install django gunicorn setproctitle && 
-    django-admin.py startproject $0 && 
+    django-admin startproject $0 && 
     deactivate' -- $SANITIZED_DOMAIN
 
 # Add domain to Allowed host in settings.py

@@ -68,7 +68,7 @@ sudo su - $USER -c 'cd ~ &&
 virtualenv . && 
 source bin/activate && 
 pip install django gunicorn setproctitle && 
-django-admin.py startproject $0 && 
+django-admin startproject $0 && 
 deactivate' -- $USER
 
 # gunicorn_start template, executable

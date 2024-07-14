@@ -1,8 +1,8 @@
 # lightsail-django
 
-This is project is for automate django app deployment to AWS lightsail.
+This is project is for automate django app deployment to AWS lightsail, debian instance.
 
-Created on 2020 and need some update with the latest OS/app/dependencies to be used.
+Tested on Debian12 instance at aws-lightsail
 
 ## What
 
