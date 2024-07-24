@@ -22,7 +22,7 @@
 
 
 #################################################
-# Install needed package to deploy django
+# Install needed package to deploy nestjs
 # For debian-9 instance at aws-lightsail
 # suwiryo.atmo@gmail.com - 26/May/2020
 
@@ -32,7 +32,7 @@ sudo set -euo pipefail
 sudo apt-get update -y
 sudo apt-get upgrade -y
 
-# Dependencies for serving django
+# Dependencies for serving nestjs
 sudo apt-get install -y supervisor
 sudo apt-get install -y nginx
 sudo apt-get install -y python-virtualenv
@@ -57,38 +57,38 @@ sudo groupadd --system webapps
 # Add new user
 # Setup for new user
 USER=$1
-sudo useradd --system --gid webapps --shell /bin/bash --home /webapps/$USER_django $USER
+sudo useradd --system --gid webapps --shell /bin/bash --home /webapps/$USER_nestjs $USER
 
 # Create user directory
-sudo mkdir -p /webapps/$USER_django/
-sudo chown $USER /webapps/$USER_django/
+sudo mkdir -p /webapps/$USER_nestjs/
+sudo chown $USER /webapps/$USER_nestjs/
 
-# Create django project
+# Create nestjs project
 sudo su - $USER -c 'cd ~ && 
 virtualenv . && 
 source bin/activate && 
-pip install django gunicorn setproctitle && 
-django-admin startproject $0 && 
+pip install nestjs gunicorn setproctitle && 
+nestjs-admin startproject $0 && 
 deactivate' -- $USER
 
 # gunicorn_start template, executable
 NAME="CHANGE_HERE_app"                                  # Name of the application
-DJANGODIR=/webapps/CHANGE_HERE_django/$0                # Django project directory
-SOCKFILE=/webapps/CHANGE_HERE_django/run/gunicorn.sock  # we will communicte using this unix socket
+NESTJSDIR=/webapps/CHANGE_HERE_nestjs/$0                # NestJs project directory
+SOCKFILE=/webapps/CHANGE_HERE_nestjs/run/gunicorn.sock  # we will communicte using this unix socket
 USER=CHANGE_HERE                                        # the user to run as
 GROUP=webapps                                  # the group to run as
 NUM_WORKERS=3                                  # how many worker processes should Gunicorn spawn
-DJANGO_SETTINGS_MODULE=CHANGE_HERE.settings             # which settings file should Django use
-DJANGO_WSGI_MODULE=CHANGE_HERE.wsgi
+NESTJS_SETTINGS_MODULE=CHANGE_HERE.settings             # which settings file should NestJs use
+NESTJS_WSGI_MODULE=CHANGE_HERE.wsgi
 
 # Copy gunicorn start script
-sudo su - $USER -c 'sed "s/CHANGE_HERE/$1/g" "$0/gunicorn_start" > "/webapps/$1_django/bin/gunicorn_start"' -- $PWD/template $USER
+sudo su - $USER -c 'sed "s/CHANGE_HERE/$1/g" "$0/gunicorn_start" > "/webapps/$1_nestjs/bin/gunicorn_start"' -- $PWD/template $USER
 
 # Supervisor conf template
 [program:CHANGE_HERE]
-command = /webapps/CHANGE_HERE_django/bin/gunicorn_start                    ; Command to start app
+command = /webapps/CHANGE_HERE_nestjs/bin/gunicorn_start                    ; Command to start app
 user = CHANGE_HERE                                                          ; User to run as
-stdout_logfile = /webapps/$CHANGE_HERE_django/logs/gunicorn_supervisor.log   ; Where to write log messages
+stdout_logfile = /webapps/$CHANGE_HERE_nestjs/logs/gunicorn_supervisor.log   ; Where to write log messages
 redirect_stderr = true  
 
 # Copy supervisor conf script
@@ -100,7 +100,7 @@ sudo supervisorctl update
 
 # nginx entry
 upstream CHANGE_HERE_app_server {
-  server unix:/webapps/CHANGE_HERE_django/run/gunicorn.sock fail_timeout=0;
+  server unix:/webapps/CHANGE_HERE_nestjs/run/gunicorn.sock fail_timeout=0;
 }
 
 server {
@@ -109,15 +109,15 @@ server {
 
     client_max_body_size 4G;
 
-    access_log /webapps/CHANGE_HERE_django/logs/nginx-access.log;
-    error_log /webapps/CHANGE_HERE_django/logs/nginx-error.log;
+    access_log /webapps/CHANGE_HERE_nestjs/logs/nginx-access.log;
+    error_log /webapps/CHANGE_HERE_nestjs/logs/nginx-error.log;
 
     location /static/ {
-        alias   /webapps/CHANGE_HERE_django/static/;
+        alias   /webapps/CHANGE_HERE_nestjs/static/;
     }
 
     location /media/ {
-        alias   /webapps/CHANGE_HERE_django/media/;
+        alias   /webapps/CHANGE_HERE_nestjs/media/;
     }
 
     location / {

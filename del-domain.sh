@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 #################################################
-# Setup debian-9 to serve django project
+# Setup debian-9 to serve nestjs project
 # For debian-9 instance at aws-lightsail
 # suwiryo.atmo@gmail.com - 27/May/2020
 #################################################
@@ -44,7 +44,7 @@ sudo supervisorctl update
 # Deleting user
 echo '> Deleting User'
 sudo userdel $SANITIZED_DOMAIN
-sudo rm -rf /webapps/${SANITIZED_DOMAIN}__django
+sudo rm -rf /webapps/${SANITIZED_DOMAIN}__nestjs
 
 #################################################
 # Cleanup web server

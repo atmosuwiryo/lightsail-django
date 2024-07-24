@@ -36,3 +36,7 @@ sudo apt-get install git
 
 # Needed for renew certificate automatically
 sudo apt-get install cron
+
+# Needed for NestJS
+sudo apt-get install nodejs
+sudo apt-get install npm
