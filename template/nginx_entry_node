@@ -1,5 +1,5 @@
 upstream CHANGE_HERE__app_server {
-  server http://localhost:3000 fail_timeout=0;
+  server 127.0.0.1:3000 fail_timeout=0;
 }
 
 server {
